@@ -56,6 +56,33 @@ def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 
+	#initizialize v0(s)=0 for all s
+	#for k=1 until convergence:
+	#for all s that exist in set of States:
+	#vk+1(s)=sum of policy for state s given action a times(R(s,a)+gamma sum(probability of action a going from s to s' times vk(s')))
+	
+	#deterministic policy system, therefore there is only 1 given state per action
+
+	while(True):
+		v_next=np.zeros(nS)
+
+		#if convergence >0.1:
+		for s in range(nS):
+			action=policy[s]
+			for outcome in P[s][action]:
+				prob_next_state,next_state,reward,done=outcome
+				#print(f"*** Action: {action} Reward: {reward} Prob_Next_state {prob_next_state}, Next State {next_state}")
+
+				v_next[s]+=prob_next_state*(reward+(gamma*value_function[next_state]))
+
+		#print(f"vk: {value_function}\nvk+1: {v_next}")
+		
+		
+		if(max(abs(v_next-value_function)))<tol:
+    			break
+		value_function=v_next		
+
+
 
 	############################
 	return value_function
@@ -83,11 +110,17 @@ def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
 
 	new_policy = np.zeros(nS, dtype='int')
 
-	############################
-	# YOUR IMPLEMENTATION HERE #
+	for s in range(nS):
+		state_action_vals=np.zeros(nA)
+		for a in range(nA):
+			for outcome in P[s][a]:
+				prob_next_state,next_state,reward,done=outcome
+				state_action_vals[a]+=prob_next_state*(reward+(gamma*value_from_policy[next_state]))
+		new_policy[s]=np.argmax(state_action_vals)
 
 
 	############################
+
 	return new_policy
 
 
@@ -111,10 +144,17 @@ def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
 
 	value_function = np.zeros(nS)
 	policy = np.zeros(nS, dtype=int)
-
 	############################
 	# YOUR IMPLEMENTATION HERE #
 
+	while (True):
+		value_function=policy_evaluation(P,nS,nA,policy)
+		improved_policy=policy_improvement(P,nS,nA,value_function,policy)
+
+		if(max(abs(improved_policy-policy))<tol):
+			break
+		
+		policy=improved_policy	
 
 	############################
 	return value_function, policy
@@ -141,10 +181,38 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 	policy = np.zeros(nS, dtype=int)
 	############################
 	# YOUR IMPLEMENTATION HERE #
+	
+	while(True):
+		v_next=np.zeros(nS)
+
+		for s in range(nS):
+			state_action_vals=np.zeros(nA)
+			for action in range(nA):
+				for outcome in P[s][action]:
+					prob_next_state,next_state,reward,done=outcome
+					#print(outcome)
+					state_action_vals[action]+=prob_next_state*(reward+(gamma*value_function[next_state]))
+				
+			v_next[s]=max(state_action_vals)
+
+		if(max(abs(v_next-value_function)))<tol:
+			break
+		value_function=v_next
+
+	#print(value_function)
+	new_policy = np.zeros(nS, dtype='int')
+
+	for s in range(nS):
+		state_action_vals=np.zeros(nA)
+		for a in range(nA):
+			for outcome in P[s][a]:
+				prob_next_state,next_state,reward,done=outcome
+				state_action_vals[a]+=prob_next_state*(reward+(gamma*value_function[next_state]))
+		new_policy[s]=np.argmax(state_action_vals)
 
 
 	############################
-	return value_function, policy
+	return value_function, new_policy
 
 def render_single(env, policy, max_steps=100):
   """
@@ -164,7 +232,7 @@ def render_single(env, policy, max_steps=100):
   ob = env.reset()
   for t in range(max_steps):
     env.render()
-    time.sleep(0.25)
+    #time.sleep(0.25)
     a = policy[ob]
     ob, rew, done, _ = env.step(a)
     episode_reward += rew
@@ -175,6 +243,7 @@ def render_single(env, policy, max_steps=100):
     print("The agent didn't reach a terminal state in {} steps.".format(max_steps))
   else:
   	print("Episode reward: %f" % episode_reward)
+  return episode_reward
 
 
 # Edit below to run policy and value iteration on different environments and
@@ -183,17 +252,49 @@ def render_single(env, policy, max_steps=100):
 if __name__ == "__main__":
 
 	# comment/uncomment these lines to switch between deterministic/stochastic environments
-	env = gym.make("Deterministic-4x4-FrozenLake-v0")
-	# env = gym.make("Stochastic-4x4-FrozenLake-v0")
+	env_det = gym.make("Deterministic-4x4-FrozenLake-v0")
+	env_stoch = gym.make("Stochastic-4x4-FrozenLake-v0")
 
-	print("\n" + "-"*25 + "\nBeginning Policy Iteration\n" + "-"*25)
+	envs=[env_det,env_stoch]
+	names={env_det:"det",env_stoch:"stoch"}
 
-	V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
-	render_single(env, p_pi, 100)
+	vals={}
+	for env in envs:
+		policy_times=[]
+		policy_success=0
+		value_times=[]
+		value_success=0
+		for i in range(200):
+			#print("\n" + "-"*25 + "\nBeginning Policy Iteration\n" + "-"*25)
+			time1=time.time()
+			
+			V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+			policy_success+=render_single(env, p_pi, 100)
+			time2=time.time()
+			#print("Total runtime: "+str(time2-time1))
+			policy_times.append(time2-time1)
+			#print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
+			time1=time.time()
+			V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+			value_success+=render_single(env, p_vi, 100)
+			time2=time.time()
+			#print("Total runtime: "+str(time2-time1))
+			value_times.append(time2-time1)
+		print(names[env])
+		vals[names[env]]=(np.mean(policy_times),policy_success/200,np.mean(value_times),value_success/200)
 
-	print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
-
-	V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
-	render_single(env, p_vi, 100)
-
+	print("-----------------Deterministic-----------------")
+	print("Policy Iteration Average Time to Complete: "+str(vals["det"][0]))
+	print("Policy Iteration Success Rate: "+str(vals["det"][1]))
+	print("Value Iteration Average Time to Complete: "+str(vals["det"][2]))
+	print("Value Iteration Success Rate: "+str(vals["det"][3]))
+	print("\n------------------Stochastic-------------------")
+	print("Policy Iteration Average Time to Complete: "+str(vals["stoch"][0]))
+	print("Policy Iteration Success Rate: "+str(vals["stoch"][1]))
+	print("Value Iteration Average Time to Complete: "+str(vals["stoch"][2]))
+	print("Value Iteration Success Rate: "+str(vals["stoch"][3]))
+		# print(str(names[env])+" Average time Policy Iteration: "+str(np.mean(policy_times)))
+		# print(str(names[env])+" Success Rate Policy Iteration:"+str(policy_success/50))
+		# print(str(names[env])+" Average time Value Iteration: "+str(np.mean(value_times)))
+		# print(str(names[env])+" Success Rate Value Iteration:"+str(value_success/50))
 
