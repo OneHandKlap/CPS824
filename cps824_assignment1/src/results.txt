@@ -1,0 +1,29 @@
+-----------------Deterministic-----------------
+Policy Iteration Average Time to Complete: 0.019742501974105833
+Policy Iteration Success Rate: 1.0
+Policy Iteration Average Iterations: 7.0
+Value Iteration Average Time to Complete: 0.018573970794677735
+Value Iteration Success Rate: 1.0
+Value Iteration Average Iterations: 7.0
+
+------------------Stochastic-------------------
+Policy Iteration Average Time to Complete: 0.09560156583786011
+Policy Iteration Success Rate: 0.725
+Policy Iteration Average Iterations: 7.0
+Value Iteration Average Time to Complete: 0.09374362707138062
+Value Iteration Success Rate: 0.68
+Value Iteration Average Iterations: 27.0-----------------Deterministic-----------------
+Policy Iteration Average Time to Complete: 0.021203060150146485
+Policy Iteration Success Rate: 1.0
+Policy Iteration Average Iterations: 7.0
+Value Iteration Average Time to Complete: 0.01900396704673767
+Value Iteration Success Rate: 1.0
+Value Iteration Average Iterations: 7.0
+
+------------------Stochastic-------------------
+Policy Iteration Average Time to Complete: 0.10223416805267334
+Policy Iteration Success Rate: 0.755
+Policy Iteration Average Iterations: 7.0
+Value Iteration Average Time to Complete: 0.09089322924613953
+Value Iteration Success Rate: 0.775
+Value Iteration Average Iterations: 27.0

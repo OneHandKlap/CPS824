@@ -140,8 +140,9 @@ def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
 	policy = np.zeros(nS, dtype=int)
 	############################
 	# YOUR IMPLEMENTATION HERE #
-
+	iteration_count=0
 	while (True):
+		iteration_count+=1
 		value_function=policy_evaluation(P,nS,nA,policy)
 		improved_policy=policy_improvement(P,nS,nA,value_function,policy)
 
@@ -151,7 +152,7 @@ def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
 		policy=improved_policy	
 
 	############################
-	return value_function, policy
+	return value_function, policy,iteration_count
 
 def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 	"""
@@ -175,8 +176,9 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 	policy = np.zeros(nS, dtype=int)
 	############################
 	# YOUR IMPLEMENTATION HERE #
-	
+	iteration_count=0
 	while(True):
+		iteration_count+=1
 		v_next=np.zeros(nS)
 
 		for s in range(nS):
@@ -184,7 +186,7 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 			for action in range(nA):
 				for outcome in P[s][action]:
 					prob_next_state,next_state,reward,done=outcome
-					#print(outcome)
+
 					state_action_vals[action]+=prob_next_state*(reward+(gamma*value_function[next_state]))
 				
 			v_next[s]=max(state_action_vals)
@@ -193,7 +195,6 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 			break
 		value_function=v_next
 
-	#print(value_function)
 	new_policy = np.zeros(nS, dtype='int')
 
 	for s in range(nS):
@@ -204,9 +205,9 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 				state_action_vals[a]+=prob_next_state*(reward+(gamma*value_function[next_state]))
 		new_policy[s]=np.argmax(state_action_vals)
 
-
+	
 	############################
-	return value_function, new_policy
+	return value_function, new_policy, iteration_count
 
 def render_single(env, policy, max_steps=100):
   """
@@ -251,12 +252,12 @@ if __name__ == "__main__":
 
 	# print("\n" + "-"*25 + "\nBeginning Policy Iteration\n" + "-"*25)
 
-	# V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+	# V_pi, p_pi,count = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
 	# render_single(env, p_pi, 100)
 
 	# print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
 
-	# V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+	# V_vi, p_vi,count = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
 	# render_single(env, p_vi, 100)
 
 	#Function to compare the running time and accuracy of both policy creation techniques
@@ -275,6 +276,7 @@ if __name__ == "__main__":
 	Printout of the results:
 		Average time to complete (May be success or a failure)
 		Success Rate
+		Average Iterations
 
 	"""	
 	def run_experiment(iterations,outfile):
@@ -285,37 +287,45 @@ if __name__ == "__main__":
 		for env in envs:
 			policy_times=[]
 			policy_success=0
+			policy_iterations=[]
 			value_times=[]
 			value_success=0
+			value_iterations=[]
 			for i in range(iterations):
 				time1=time.time()
 				
-				V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+				V_pi, p_pi,policy_count = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
 				policy_success+=render_single(env, p_pi, 100)
 				time2=time.time()
 
 				policy_times.append(time2-time1)
+				policy_iterations.append(policy_count)
 				#print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
 				time1=time.time()
-				V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+				V_vi, p_vi,value_count = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
 				value_success+=render_single(env, p_vi, 100)
 				time2=time.time()
 				#print("Total runtime: "+str(time2-time1))
 				value_times.append(time2-time1)
-
-			vals[names[env]]=(np.mean(policy_times),policy_success/iterations,np.mean(value_times),value_success/iterations)
+				value_iterations.append(value_count)
+			print(value_iterations)
+			vals[names[env]]=(np.mean(policy_times),policy_success/iterations,np.mean(policy_iterations),np.mean(value_times),value_success/iterations,np.mean(value_iterations))
 
 		f=open(outfile,"a")
 		f.write("-----------------Deterministic-----------------")
 		f.write("\nPolicy Iteration Average Time to Complete: "+str(vals["det"][0]))
 		f.write("\nPolicy Iteration Success Rate: "+str(vals["det"][1]))
-		f.write("\nValue Iteration Average Time to Complete: "+str(vals["det"][2]))
-		f.write("\nValue Iteration Success Rate: "+str(vals["det"][3]))
+		f.write("\nPolicy Iteration Average Iterations: "+str(vals["det"][2]))
+		f.write("\nValue Iteration Average Time to Complete: "+str(vals["det"][3]))
+		f.write("\nValue Iteration Success Rate: "+str(vals["det"][4]))
+		f.write("\nValue Iteration Average Iterations: "+str(vals["det"][5]))
 		f.write("\n\n------------------Stochastic-------------------")
 		f.write("\nPolicy Iteration Average Time to Complete: "+str(vals["stoch"][0]))
 		f.write("\nPolicy Iteration Success Rate: "+str(vals["stoch"][1]))
-		f.write("\nValue Iteration Average Time to Complete: "+str(vals["stoch"][2]))
-		f.write("\nValue Iteration Success Rate: "+str(vals["stoch"][3]))
+		f.write("\nPolicy Iteration Average Iterations: "+str(vals["det"][2]))
+		f.write("\nValue Iteration Average Time to Complete: "+str(vals["stoch"][3]))
+		f.write("\nValue Iteration Success Rate: "+str(vals["stoch"][4]))
+		f.write("\nValue Iteration Average Iterations: "+str(vals["stoch"][5]))
 		f.close()
 	
 	run_experiment(200,"results.txt")
